@@ -482,7 +482,7 @@
             </div>
         </div>
 
-        <div id="sidebarOverlay" class="mobile-sidebar-overlay md:hidden"></div>
+        <div id="sidebarOverlay" class="mobile-sidebar-overlay md:hidden" onclick="toggleMobileSidebar(false)"></div>
 
         <!-- 右侧预览区 -->
         <div class="flex-1 flex flex-col bg-gray-100">
@@ -779,11 +779,26 @@
     });
 
     // 定义必要的函数
-    function toggleMobileSidebar() {
+    function toggleMobileSidebar(forceState) {
+        if (window.app && typeof window.app.setMobileSidebar === 'function') {
+            window.app.setMobileSidebar(forceState);
+            return;
+        }
+
         const sidebar = document.querySelector('#app > div:first-child');
-        if (sidebar) {
-            // 切换mobile-sidebar-open类来显示/隐藏侧边栏
-            sidebar.classList.toggle('mobile-sidebar-open');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (!sidebar) {
+            return;
+        }
+
+        const shouldOpen = typeof forceState === 'boolean'
+            ? forceState
+            : !sidebar.classList.contains('mobile-sidebar-open');
+
+        sidebar.classList.toggle('mobile-sidebar-open', shouldOpen);
+
+        if (overlay) {
+            overlay.classList.toggle('active', shouldOpen);
         }
     }
 </script>

@@ -19,7 +19,7 @@ const HARDCODED_USERS = {
         username: 'admin',
         // 使用固定的哈希值，避免每次重启生成不同的哈希
         // 原始密码: 10kmrr1234
-        passwordHash: '$2a$10$rN9j8hzKR6fKaKQOCm5LFuW6DjQZX6TqsKrNjf7AzpUzUGhVOGv.O',
+        passwordHash: '$2a$10$7QO4GSKUwLwanCAOuZskXOth.znIz8UOmSH6Hq8tEnB4aQQCVeC/y',
         role: 'admin'
     }
 };

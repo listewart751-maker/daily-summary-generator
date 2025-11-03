@@ -199,6 +199,7 @@ class DailyReportManager {
     // API请求方法
     async apiRequest(endpoint, options = {}) {
         const url = `${this.apiBase}${endpoint}`;
+        console.log('🌐 API请求:', url);
         const defaultOptions = {
             headers: {
                 'Content-Type': 'application/json',
@@ -206,35 +207,47 @@ class DailyReportManager {
             }
         };
 
-        const response = await fetch(url, { ...defaultOptions, ...options });
+        try {
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            console.log('📡 API响应状态:', response.status);
 
-        if (response.status === 401) {
-            this.logout();
-            throw new Error('登录已过期，请重新登录');
+            if (response.status === 401) {
+                this.logout();
+                throw new Error('登录已过期，请重新登录');
+            }
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('❌ API错误响应:', error);
+                throw new Error(error.error || '请求失败');
+            }
+
+            const data = await response.json();
+            console.log('✅ API响应数据:', data);
+            return data;
+        } catch (error) {
+            console.error('❌ API请求异常:', error);
+            throw error;
         }
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || '请求失败');
-        }
-
-        return response.json();
     }
 
     // 认证相关
     async login(username, password) {
         try {
+            console.log('🔐 尝试登录:', { username, passwordLength: password?.length });
             const data = await this.apiRequest('/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password })
             });
 
+            console.log('✅ 登录成功，收到token:', data.token ? '存在' : '不存在');
             this.token = data.token;
             this.currentUser = data.user;
             localStorage.setItem('authToken', this.token);
 
             return data;
         } catch (error) {
+            console.error('❌ 登录失败:', error);
             throw error;
         }
     }
@@ -1078,6 +1091,9 @@ class DailyReportManager {
 
         this.renderHistory();
         this.renderPreview();
+        
+        // 移动端选择报告后自动收起侧边栏
+        this.setMobileSidebar(false);
     }
 
     // 模态框管理
@@ -1195,6 +1211,25 @@ class DailyReportManager {
         } else {
             currentUserSpan.textContent = '访客';
         }
+    }
+
+    setMobileSidebar(isOpen) {
+        const sidebar = document.querySelector('#app > div:first-child');
+        const overlay = document.getElementById('sidebarOverlay');
+        
+        if (!sidebar) {
+            return;
+        }
+
+        // 设置侧边栏打开/关闭状态
+        sidebar.classList.toggle('mobile-sidebar-open', isOpen);
+        
+        // 设置遮罩显示/隐藏
+        if (overlay) {
+            overlay.classList.toggle('active', isOpen);
+        }
+        
+        console.log(`📱 移动端侧边栏${isOpen ? '打开' : '关闭'}`);
     }
 
     showSettings() {
