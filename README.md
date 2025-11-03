@@ -34,7 +34,7 @@ A powerful automation tool that converts Markdown-formatted technical community 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/daily-summary-generator.git
+git clone https://github.com/listewart751-maker/daily-summary-generator.git
 cd daily-summary-generator
 
 # Install dependencies
@@ -291,8 +291,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you have any questions or suggestions:
 
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/daily-summary-generator/issues)
-- 📧 **Discussions**: [GitHub Discussions](https://github.com/yourusername/daily-summary-generator/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/listewart751-maker/daily-summary-generator/issues)
+- 📧 **Discussions**: [GitHub Discussions](https://github.com/listewart751-maker/daily-summary-generator/discussions)
 - 📖 **Documentation**: Check this README and inline code comments
 
 ---

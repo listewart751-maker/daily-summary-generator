@@ -4,13 +4,13 @@
   "description": "Transform Markdown discussions into stunning social media images - Automated tool for converting technical community summaries into beautiful shareable content",
   "main": "src/full-pipeline.js",
   "type": "commonjs",
-  "homepage": "https://github.com/yourusername/daily-summary-generator#readme",
+  "homepage": "https://github.com/listewart751-maker/daily-summary-generator#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/daily-summary-generator.git"
+    "url": "https://github.com/listewart751-maker/daily-summary-generator.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/daily-summary-generator/issues"
+    "url": "https://github.com/listewart751-maker/daily-summary-generator/issues"
   },
   "scripts": {
     "start": "node server.js",
