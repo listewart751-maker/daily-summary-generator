@@ -1,0 +1,23 @@
+{
+  "name": "daily-report-manager",
+  "version": "1.0.0",
+  "description": "技术群聊日报管理器 - Web App",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 3000",
+    "serve": "npx serve . -p 3000",
+    "dev": "npx serve . -p 3000 -o"
+  },
+  "keywords": [
+    "daily-report",
+    "technical-community",
+    "social-media",
+    "markdown",
+    "web-app"
+  ],
+  "author": "Claude Code",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}

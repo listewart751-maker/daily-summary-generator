@@ -1,0 +1,66 @@
+{
+  "name": "daily-summary-generator",
+  "version": "1.0.0",
+  "description": "Transform Markdown discussions into stunning social media images - Automated tool for converting technical community summaries into beautiful shareable content",
+  "main": "src/full-pipeline.js",
+  "type": "commonjs",
+  "homepage": "https://github.com/yourusername/daily-summary-generator#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/daily-summary-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/daily-summary-generator/issues"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'No build step needed for static files'",
+    "deploy": "vercel --prod",
+    "generate": "node src/generate-daily-summary.js",
+    "pipeline": "node src/full-pipeline.js",
+    "test": "node src/test.js",
+    "install-deps": "npm install playwright qrcode express jsonwebtoken bcryptjs cors fs-extra uuid multer",
+    "setup": "npm install && npx playwright install"
+  },
+  "keywords": [
+    "markdown",
+    "screenshot",
+    "automation",
+    "social-media",
+    "image-generation",
+    "playwright",
+    "content-creation",
+    "social-media-marketing",
+    "technical-writing",
+    "community-management",
+    "xiaohongshu",
+    "wechat",
+    "twitter",
+    "image-optimization"
+  ],
+  "author": {
+    "name": "Daily Summary Generator",
+    "email": "your-email@example.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "qrcode": "^1.5.3",
+    "sharp": "^0.34.4",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.1",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

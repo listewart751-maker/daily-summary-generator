@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术群聊日报管理器</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+    <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- CodeMirror 5 for Markdown Editor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/mode/overlay.min.css">
+    <!-- CodeMirror 5 JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/gfm/gfm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/continuelist.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/keymap/sublime.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@300;400;500;600;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=ZCOOL+QingKe+HuangYou&family=Long+Cang&family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=ZCOOL+XiaoWei&family=Source+Han+Sans+CN:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .font-noto-sans { font-family: 'Noto Sans SC', sans-serif; }
+        .font-noto-serif { font-family: 'Noto Serif SC', serif; }
+        .font-pingfang { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        .font-microsoft { font-family: 'Microsoft YaHei', sans-serif; }
+        .font-source-han { font-family: 'Source Han Sans CN', sans-serif; }
+        .font-zcool-kuaile { font-family: 'ZCOOL KuaiLe', cursive; }
+        .font-zcool-xiaowei { font-family: 'ZCOOL XiaoWei', serif; }
+        .font-zcool-qingke { font-family: 'ZCOOL QingKe HuangYou', sans-serif; }
+        .font-long-cang { font-family: 'Long Cang', cursive; }
+        .font-ma-shan { font-family: 'Ma Shan Zheng', cursive; }
+        .font-liu-jian { font-family: 'Liu Jian Mao Cao', cursive; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Desktop sidebar - always visible */
+        #app > div:first-child {
+            position: relative;
+            left: 0;
+        }
+
+        /* Mobile Responsive Improvements */
+        .mobile-sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            display: none;
+        }
+
+        .mobile-sidebar-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            /* Hide sidebar by default on mobile, but keep it accessible via menu button */
+            #app > div:first-child {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                height: 100vh;
+                z-index: 40;
+                transition: left 0.3s ease-in-out;
+                width: 85% !important; /* 移动端侧边栏宽度 */
+                max-width: 300px;
+                box-shadow: 4px 0 10px rgba(0,0,0,0.1); /* 添加阴影提示可以滑动 */
+            }
+
+            #app > div:first-child.mobile-sidebar-open {
+                left: 0;
+            }
+
+            .mobile-padding {
+                padding: 1rem !important;
+            }
+
+            .mobile-text-sm {
+                font-size: 0.875rem !important;
+            }
+
+            .mobile-text-base {
+                font-size: 1rem !important;
+            }
+
+            .mobile-modal {
+                margin: 0.5rem !important;
+                max-width: calc(100vw - 1rem) !important;
+            }
+
+            .mobile-button {
+                padding: 0.75rem 1rem !important;
+                font-size: 0.875rem !important;
+            }
+
+            .mobile-input {
+                padding: 0.75rem !important;
+                font-size: 1rem !important;
+                min-height: 44px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Ensure date picker is visible and usable on mobile */
+            input[type="date"] {
+                min-height: 44px !important;
+                font-size: 16px !important; /* Prevents zoom on iOS */
+                padding: 0.75rem !important;
+                box-sizing: border-box !important;
+                background-color: white !important;
+                border: 1px solid #d1d5db !important;
+                border-radius: 0.5rem !important;
+                width: 100% !important;
+            }
+
+            /* Better mobile buttons */
+            .mobile-button {
+                min-height: 44px !important;
+                min-width: 44px !important;
+                font-size: 0.875rem !important;
+                padding: 0.75rem 1rem !important;
+                box-sizing: border-box !important;
+            }
+
+            .mobile-preview {
+                padding: 1rem !important;
+                overflow-x: auto !important;
+            }
+
+            /* Reduce modal sizes on mobile */
+            .modal-responsive {
+                margin: 1rem !important;
+                max-height: calc(100vh - 2rem) !important;
+                width: calc(100vw - 2rem) !important;
+                max-width: none !important;
+            }
+
+            /* Better mobile navigation */
+            .mobile-nav {
+                padding: 0.75rem !important;
+            }
+
+            .mobile-nav-item {
+                min-width: 44px !important;
+                min-height: 44px !important;
+            }
+
+            /* Mobile CodeMirror Editor */
+            .CodeMirror {
+                height: 300px !important;
+                font-size: 13px !important;
+                border-radius: 0.5rem !important;
+            }
+
+            /* 确保编辑器在移动端完全可见 */
+            .CodeMirror-scroll {
+                min-height: 300px !important;
+            }
+
+            /* 调整行号在移动端的显示 */
+            .CodeMirror-gutters {
+                padding: 0 4px !important;
+            }
+
+            .CodeMirror-linenumber {
+                padding: 0 4px !important;
+                font-size: 11px !important;
+                color: #6b7280 !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tiny-mobile-padding {
+                padding: 0.75rem !important;
+            }
+
+            .tiny-mobile-text {
+                font-size: 0.8125rem !important;
+            }
+
+            .tiny-mobile-button {
+                padding: 0.625rem 0.875rem !important;
+                font-size: 0.8125rem !important;
+            }
+        }
+
+        /* CodeMirror 5 Styles */
+        .CodeMirror {
+            height: 400px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .CodeMirror-focused {
+            outline: 2px solid #3b82f6;
+            outline-offset: -2px;
+        }
+
+        .CodeMirror-gutters {
+            background: #f8f9fa;
+            border-right: 1px solid #e5e7eb;
+        }
+
+        /* Monokai theme adjustments */
+        .CodeMirror.cm-s-monokai {
+            background: #272822;
+            color: #f8f8f2;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-header {
+            color: #a6e22e;
+            font-weight: 600;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-strong {
+            color: #f92672;
+            font-weight: 600;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-em {
+            color: #66d9ef;
+            font-style: italic;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-link {
+            color: #ae81ff;
+            text-decoration: underline;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-code {
+            background: #3e3d32;
+            color: #f8f8f2;
+            padding: 0 4px;
+            border-radius: 3px;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-quote {
+            border-left: 4px solid #75715e;
+            padding-left: 16px;
+            color: #f8f8f2;
+            font-style: italic;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-keyword {
+            color: #f92672;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-atom {
+            color: #ae81ff;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-number {
+            color: #ae81ff;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-def {
+            color: #66d9ef;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-variable {
+            color: #f8f8f2;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-variable-2 {
+            color: #9effff;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-variable-3 {
+            color: #66d9ef;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-property {
+            color: #a6e22e;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-operator {
+            color: #f8f8f2;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-comment {
+            color: #75715e;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-string {
+            color: #e6db74;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-string-2 {
+            color: #e6db74;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-meta {
+            color: #75715e;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-qualifier {
+            color: #75715e;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-builtin {
+            color: #f92672;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-bracket {
+            color: #f8f8f2;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-tag {
+            color: #f92672;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-attribute {
+            color: #a6e22e;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-hr {
+            color: #75715e;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-link {
+            color: #ae81ff;
+        }
+
+        .CodeMirror.cm-s-monokai .cm-error {
+            color: #f8f8f0;
+            background: #f92672;
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .preview-container {
+            width: 100%;
+            max-width: 1200px; /* 最大宽度限制 */
+            margin: 0 auto;
+            transition: transform 0.2s ease;
+        }
+
+        .preview-frame {
+            width: 100%;
+            min-height: 800px; /* 最小高度 */
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            background: white;
+        }
+
+        .preview-frame iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 800px;
+            border: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 登录页面 -->
+    <div id="loginPage" class="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 hidden">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mobile-padding">
+            <div class="text-center mb-8">
+                <div class="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">技术群聊日报</h1>
+                <p class="text-gray-600">登录以管理您的日报</p>
+            </div>
+
+            <form id="loginForm" onsubmit="login(event)" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+                    <input type="text" id="username" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                           placeholder="请输入用户名" autocomplete="username">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">密码</label>
+                    <input type="password" id="password" required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                           placeholder="请输入密码" autocomplete="current-password">
+                </div>
+
+                <div id="loginError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    <!-- 错误信息将在这里显示 -->
+                </div>
+
+                <div class="space-y-3">
+                    <button type="submit" id="loginBtn"
+                            class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <span id="loginBtnText">管理员登录</span>
+                        <svg id="loginSpinner" class="hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">或者</span>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="enterGuestMode()"
+                            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        访客模式浏览
+                    </button>
+                </div>
+
+                            </form>
+        </div>
+    </div>
+
+    <!-- 主应用界面 -->
+    <div id="app" class="h-screen flex">
+        <!-- 左侧边栏 -->
+        <div class="w-80 bg-white border-r border-gray-200 flex flex-col md:w-80 mobile:w-full mobile:max-w-xs">
+            <!-- 头部 -->
+            <div class="p-4 border-b border-gray-200 mobile-nav">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900 mobile-text-base">群聊日报</h1>
+                        <p class="text-xs text-gray-500 mt-1 mobile-text-sm">用户: <span id="currentUser">访客</span></p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="createReportBtn" onclick="showCreateModal()" class="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors mobile-nav-item">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </button>
+                        <button id="loginBtn" onclick="showLoginModal()" class="bg-green-500 hover:bg-green-600 text-white rounded-lg p-2 shadow-lg transition-colors mobile-nav-item" title="登录">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                        <button id="logoutBtn" onclick="logout()" class="bg-gray-500 hover:bg-gray-600 text-white rounded-lg p-2 shadow-lg transition-colors" title="退出登录">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史列表 -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
+                <div id="historyList" class="space-y-2">
+                    <!-- 历史记录将在这里动态生成 -->
+                </div>
+            </div>
+
+            <!-- 设置面板 -->
+            <div class="p-4 border-t border-gray-200">
+                <button onclick="showSettings()" class="w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        设置
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <div id="sidebarOverlay" class="mobile-sidebar-overlay md:hidden"></div>
+
+        <!-- 右侧预览区 -->
+        <div class="flex-1 flex flex-col bg-gray-100">
+            <!-- 预览工具栏 -->
+            <div class="bg-white border-b border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <button id="mobileSidebarToggle" onclick="toggleMobileSidebar()" class="md:hidden bg-gray-500 hover:bg-gray-600 text-white rounded-lg p-2 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <h2 id="previewTitle" class="text-lg font-medium text-gray-900">选择一个日报查看</h2>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="zoomIn()" class="p-1 text-gray-500 hover:text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"></path>
+                                </svg>
+                            </button>
+                            <button onclick="zoomOut()" class="p-1 text-gray-500 hover:text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path>
+                                </svg>
+                            </button>
+                            <button onclick="resetZoom()" class="p-1 text-gray-500 hover:text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="previewActions" class="flex items-center space-x-2" style="display: none;">
+                        <button onclick="editCurrent()" class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors">
+                            编辑
+                        </button>
+                        <button onclick="shareReport()" class="px-4 py-2 mobile-button bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                            </svg>
+                            分享
+                        </button>
+                        <button onclick="exportToPNG()" class="px-4 py-2 mobile-button bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            导出PNG
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预览内容区 -->
+            <div class="flex-1 overflow-auto custom-scrollbar p-8 mobile-preview">
+                <div id="previewContainer" class="w-full">
+                    <div class="text-center text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>选择或创建一个日报开始</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建/编辑模态框 -->
+    <div id="createModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="hideCreateModal()"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden relative z-10 modal-responsive">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-900" id="modalTitle">创建新日报</h3>
+                </div>
+                <div class="p-6 overflow-y-auto max-h-[60vh]">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">日期</label>
+                            <input type="date" id="reportDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mobile-input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">字体选择</label>
+                            <select id="reportFont" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mobile-input">
+                                <option value="font-noto-sans">Noto Sans SC (默认)</option>
+                                <option value="font-noto-serif">Noto Serif SC</option>
+                                <option value="font-microsoft">微软雅黑</option>
+                                <option value="font-source-han">Source Han Sans CN</option>
+                                <option value="font-zcool-kuaile">站酷快乐体</option>
+                                <option value="font-zcool-xiaowei">站酷小薇体</option>
+                                <option value="font-zcool-qingke">站酷庆科黄油体</option>
+                                <option value="font-long-cang">龙藏体</option>
+                                <option value="font-ma-shan">马善政楷体</option>
+                                <option value="font-liu-jian">柳建毛草体</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">二维码图片 (可选)</label>
+                            <div class="flex items-center space-x-3">
+                                <input type="file" id="qrcodeUpload" accept="image/*" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                <button type="button" onclick="clearQRCode()" class="px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors text-sm">
+                                    清除
+                                </button>
+                            </div>
+                            <div id="qrcodePreview" class="mt-2 hidden">
+                                <img id="qrcodePreviewImg" class="w-24 h-24 object-contain border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">群聊汇总内容 (Markdown格式)</label>
+                            <div id="markdownEditor" class="border border-gray-300 rounded-lg"></div>
+                            <input type="hidden" id="reportContent" value="">
+                            <div class="mt-2 text-xs text-gray-500">
+                                💡 支持Markdown语法高亮 | 使用 Ctrl+S 快速保存 | Ctrl+Z 撤销 | Ctrl+Y 重做
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                    <button onclick="hideCreateModal()" class="px-4 py-2 mobile-button text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors">
+                        取消
+                    </button>
+                    <button onclick="saveReport()" class="px-4 py-2 mobile-button bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置模态框 -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="hideSettings()"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full relative z-10 modal-responsive">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-900">设置</h3>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- 字体设置 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">字体选择</label>
+                        <select id="fontSelect" onchange="changeFont()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="font-noto-sans">Noto Sans SC (默认)</option>
+                            <option value="font-noto-serif">Noto Serif SC</option>
+                            <option value="font-microsoft">微软雅黑</option>
+                            <option value="font-source-han">Source Han Sans CN</option>
+                            <option value="font-zcool-kuaile">站酷快乐体</option>
+                            <option value="font-zcool-xiaowei">站酷小薇体</option>
+                            <option value="font-zcool-qingke">站酷庆科黄油体</option>
+                            <option value="font-long-cang">龙藏体</option>
+                            <option value="font-ma-shan">马善政楷体</option>
+                            <option value="font-liu-jian">柳建毛草体</option>
+                        </select>
+                    </div>
+
+                    <!-- 二维码上传 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">自定义二维码</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="file" id="qrCodeUpload" accept="image/*" onchange="uploadQRCode()" class="hidden">
+                            <button onclick="document.getElementById('qrCodeUpload').click()" class="px-4 py-2 mobile-button bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                                选择图片
+                            </button>
+                            <span id="qrCodeStatus" class="text-sm text-gray-500">未上传自定义二维码</span>
+                        </div>
+                        <div id="qrCodePreview" class="mt-3 hidden">
+                            <img id="qrCodeImage" class="w-16 h-16 object-cover rounded" alt="QR Code">
+                        </div>
+                    </div>
+
+                    <!-- 数据管理 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">数据管理</label>
+                        <div class="space-y-2">
+                            <button onclick="exportData()" class="px-4 py-2 mobile-button bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                                导出所有数据
+                            </button>
+                            <button onclick="clearAllData()" class="px-4 py-2 mobile-button bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors">
+                                清除所有数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200 flex justify-end">
+                    <button onclick="hideSettings()" class="px-4 py-2 mobile-button bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+                        完成
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出PNG模态框 -->
+    <div id="exportModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="hideExportModal()"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full relative z-10 modal-responsive">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-900">导出设置</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="text-center">
+                        <div class="mb-4">
+                            <div class="text-lg font-medium text-gray-900">导出为PNG图片</div>
+                            <div class="text-sm text-gray-500 mt-1">1080px宽度，适合所有社交平台</div>
+                        </div>
+                        <button onclick="exportPNG('standard')" class="w-full p-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>立即导出PNG</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200 flex justify-end">
+                    <button onclick="hideExportModal()" class="px-4 py-2 mobile-button text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors">
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享模态框 -->
+    <div id="shareModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute inset-0" onclick="hideShareModal()"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full relative z-10 modal-responsive">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-900">分享日报</h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">选择分享方式</label>
+                        <div class="space-y-3">
+                            <button onclick="shareAsFile()" class="w-full p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left flex items-center">
+                                <svg class="w-6 h-6 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <div>
+                                    <div class="font-medium">导出HTML文件</div>
+                                    <div class="text-xs text-gray-500">下载完整HTML网页文件</div>
+                                </div>
+                            </button>
+                            <button onclick="copyHTML()" class="w-full p-4 border border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors text-left flex items-center">
+                                <svg class="w-6 h-6 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                                <div>
+                                    <div class="font-medium">复制HTML代码</div>
+                                    <div class="text-xs text-gray-500">复制到剪贴板，可粘贴到任何地方</div>
+                                </div>
+                            </button>
+                            <button id="nativeShareBtn" onclick="nativeShare()" class="w-full p-4 border border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors text-left flex items-center hidden">
+                                <svg class="w-6 h-6 text-purple-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                                </svg>
+                                <div>
+                                    <div class="font-medium">系统分享</div>
+                                    <div class="text-xs text-gray-500">使用系统原生分享功能</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-gray-200 flex justify-end">
+                    <button onclick="hideShareModal()" class="px-4 py-2 mobile-button text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors">
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+<script>
+    // 确保在DOM完全加载后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔧 HTML内联脚本开始执行');
+
+        // 检查app是否已正确初始化
+        setTimeout(() => {
+            if (typeof app === 'undefined') {
+                console.error('❌ app对象未定义，尝试重新初始化');
+                try {
+                    window.app = new DailyReportManager();
+                    console.log('✅ app重新初始化成功');
+                } catch (error) {
+                    console.error('❌ app重新初始化失败:', error);
+                }
+            } else {
+                console.log('✅ app对象已正确初始化');
+            }
+        }, 100); // 延迟100ms确保app.js完全加载
+    });
+
+    // 定义必要的函数
+    function toggleMobileSidebar() {
+        const sidebar = document.querySelector('#app > div:first-child');
+        if (sidebar) {
+            // 切换mobile-sidebar-open类来显示/隐藏侧边栏
+            sidebar.classList.toggle('mobile-sidebar-open');
+        }
+    }
+</script>
+</body>
+</html>

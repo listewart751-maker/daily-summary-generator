@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录调试测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        button { padding: 10px; margin: 5px; }
+        input { padding: 5px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>登录逻辑调试测试</h1>
+
+    <div class="debug-section">
+        <h3>1. 基础测试</h3>
+        <button onclick="testBasicFlow()">测试基础流程</button>
+        <div id="basicResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>2. DOM元素测试</h3>
+        <button onclick="testDOMElements()">测试DOM元素</button>
+        <div id="domResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>3. 模拟登录测试</h3>
+        <input type="text" id="testUsername" placeholder="用户名" value="admin">
+        <input type="password" id="testPassword" placeholder="密码" value="password">
+        <button onclick="testLogin()">模拟登录</button>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>4. Token验证测试</h3>
+        <button onclick="testTokenVerify()">测试Token验证</button>
+        <div id="tokenResult"></div>
+    </div>
+
+    <script>
+        // 模拟DailyReportManager类的核心逻辑
+        class TestDailyReportManager {
+            constructor() {
+                this.apiBase = window.location.hostname === 'localhost'
+                    ? 'http://localhost:3002/api'
+                    : '/api';
+                this.token = localStorage.getItem('authToken');
+                this.currentUser = null;
+                this.reports = [];
+                this.currentReport = null;
+            }
+
+            async apiRequest(endpoint, options = {}) {
+                const url = `${this.apiBase}${endpoint}`;
+                const defaultOptions = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(this.token && { Authorization: `Bearer ${this.token}` })
+                    }
+                };
+
+                console.log(`📡 API请求: ${url}`, options);
+
+                try {
+                    const response = await fetch(url, { ...defaultOptions, ...options });
+                    console.log(`📡 API响应状态: ${response.status}`);
+
+                    if (response.status === 401) {
+                        this.logout();
+                        throw new Error('登录已过期，请重新登录');
+                    }
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || '请求失败');
+                    }
+
+                    const data = await response.json();
+                    console.log(`📡 API响应数据:`, data);
+                    return data;
+                } catch (error) {
+                    console.error(`❌ API请求失败:`, error);
+                    throw error;
+                }
+            }
+
+            async login(username, password) {
+                try {
+                    console.log(`🔑 尝试登录: ${username}`);
+                    const data = await this.apiRequest('/login', {
+                        method: 'POST',
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    console.log(`✅ 登录成功，获得token:`, data.token ? '是' : '否');
+                    console.log(`👤 用户信息:`, data.user);
+
+                    this.token = data.token;
+                    this.currentUser = data.user;
+                    localStorage.setItem('authToken', this.token);
+
+                    return data;
+                } catch (error) {
+                    console.error(`❌ 登录失败:`, error.message);
+                    throw error;
+                }
+            }
+
+            async verifyToken() {
+                try {
+                    console.log(`🔍 验证token:`, this.token ? '存在' : '不存在');
+                    const data = await this.apiRequest('/verify');
+                    this.currentUser = data.user;
+                    console.log('✅ Token验证成功，用户:', this.currentUser);
+                    return { success: true, user: data.user };
+                } catch (error) {
+                    console.error('❌ Token验证失败:', error);
+                    this.logout();
+                    return { success: false, error: error.message };
+                }
+            }
+
+            logout() {
+                console.log(`🚪 用户退出登录`);
+                this.token = null;
+                this.currentUser = null;
+                localStorage.removeItem('authToken');
+            }
+
+            showMainApp() {
+                console.log('🎯 显示主应用，当前用户:', this.currentUser);
+                return { success: true, user: this.currentUser };
+            }
+
+            showReadOnlyMode() {
+                console.log('📖 显示只读模式');
+                return { success: true, mode: 'readonly' };
+            }
+        }
+
+        let testApp;
+
+        function log(divId, message, type = 'info') {
+            const div = document.getElementById(divId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            div.innerHTML += `<div class="${className}">${new Date().toLocaleTimeString()}: ${message}</div>`;
+        }
+
+        function testBasicFlow() {
+            const resultDiv = document.getElementById('basicResult');
+            resultDiv.innerHTML = '';
+
+            try {
+                testApp = new TestDailyReportManager();
+                log('basicResult', '✅ DailyReportManager实例创建成功', 'success');
+                log('basicResult', `📍 API Base: ${testApp.apiBase}`, 'info');
+                log('basicResult', `🔑 当前Token: ${testApp.token ? '存在' : '不存在'}`, 'info');
+                log('basicResult', `👤 当前用户: ${testApp.currentUser ? testApp.currentUser.username : '未登录'}`, 'info');
+            } catch (error) {
+                log('basicResult', `❌ 基础流程测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testDOMElements() {
+            const resultDiv = document.getElementById('domResult');
+            resultDiv.innerHTML = '';
+
+            // 模拟检测关键DOM元素
+            const criticalElements = [
+                'loginPage',
+                'app',
+                'currentUser',
+                'createReportBtn',
+                'loginBtn',
+                'logoutBtn'
+            ];
+
+            criticalElements.forEach(elementId => {
+                try {
+                    // 在测试页面中这些元素不存在，我们模拟检测
+                    const exists = document.getElementById(elementId) !== null;
+                    log('domResult', `${exists ? '✅' : '❌'} DOM元素 #${elementId}: ${exists ? '存在' : '不存在'}`, exists ? 'success' : 'error');
+                } catch (error) {
+                    log('domResult', `❌ 检测DOM元素 #${elementId}失败: ${error.message}`, 'error');
+                }
+            });
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '';
+
+            const username = document.getElementById('testUsername').value;
+            const password = document.getElementById('testPassword').value;
+
+            if (!testApp) {
+                testApp = new TestDailyReportManager();
+            }
+
+            try {
+                log('loginResult', `🚀 开始登录测试: ${username}`, 'info');
+
+                const loginResult = await testApp.login(username, password);
+                log('loginResult', '✅ 登录API调用成功', 'success');
+                log('loginResult', `👤 用户名: ${loginResult.user?.username || '未知'}`, 'info');
+                log('loginResult', `🔑 Token存储: ${testApp.token ? '成功' : '失败'}`, testApp.token ? 'success' : 'error');
+
+                // 测试显示主应用
+                const showResult = testApp.showMainApp();
+                log('loginResult', `🎯 显示主应用: ${showResult.success ? '成功' : '失败'}`, showResult.success ? 'success' : 'error');
+
+            } catch (error) {
+                log('loginResult', `❌ 登录测试失败: ${error.message}`, 'error');
+                log('loginResult', `💡 这可能是由于API服务器未运行或凭证错误`, 'info');
+            }
+        }
+
+        async function testTokenVerify() {
+            const resultDiv = document.getElementById('tokenResult');
+            resultDiv.innerHTML = '';
+
+            if (!testApp) {
+                testApp = new TestDailyReportManager();
+            }
+
+            try {
+                log('tokenResult', '🔍 开始Token验证测试', 'info');
+                log('tokenResult', `🔑 当前Token: ${testApp.token ? '存在' : '不存在'}`, testApp.token ? 'success' : 'error');
+
+                if (testApp.token) {
+                    const verifyResult = await testApp.verifyToken();
+                    if (verifyResult.success) {
+                        log('tokenResult', '✅ Token验证成功', 'success');
+                        log('tokenResult', `👤 用户: ${verifyResult.user?.username || '未知'}`, 'info');
+
+                        // 测试显示主应用
+                        const showResult = testApp.showMainApp();
+                        log('tokenResult', `🎯 显示主应用: ${showResult.success ? '成功' : '失败'}`, showResult.success ? 'success' : 'error');
+                    } else {
+                        log('tokenResult', `❌ Token验证失败: ${verifyResult.error}`, 'error');
+                    }
+                } else {
+                    log('tokenResult', '⚠️ 没有Token可以验证，显示只读模式', 'info');
+                    const readOnlyResult = testApp.showReadOnlyMode();
+                    log('tokenResult', `📖 显示只读模式: ${readOnlyResult.success ? '成功' : '失败'}`, readOnlyResult.success ? 'success' : 'error');
+                }
+
+            } catch (error) {
+                log('tokenResult', `❌ Token验证测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时自动运行基础测试
+        window.addEventListener('DOMContentLoaded', () => {
+            testBasicFlow();
+        });
+    </script>
+</body>
+</html>
